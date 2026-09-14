@@ -1,0 +1,27 @@
+{
+  "name": "my-chatgpt-router",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "DSH plugin: estimate the task and route between deepseek-official and chatgpt-web (no timeout fallback)",
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "src",
+    "cordis.patch.yml"
+  ],
+  "scripts": {
+    "test": "node --test --test-isolation=none \"tests/*.test.ts\""
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "dependencies": {
+    "zod": "^4.6.5"
+  }
+}

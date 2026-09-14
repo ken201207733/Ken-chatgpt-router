@@ -1,0 +1,4 @@
+# my-chatgpt-router 自注册 —— DSH 启动时读取
+- insert:
+    - id: my-chatgpt-router
+      name: 'my-chatgpt-router'
