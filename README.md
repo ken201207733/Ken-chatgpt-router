@@ -9,7 +9,7 @@
 | 部分 | 状态 |
 | --- | --- |
 | 纯函数（`measure` / `keywords` / `policy` / `route` / `capture` / `selection`） | ✅ **35/35 单测通过**（离线、零外部依赖） |
-| `index.ts`（接线）+ `selection-projection.ts`（投影） | ✅ 已写；**⚠ 未真机验证** |
+| `index.ts`（接线）+ `selection-projection.ts`（投影） | ✅ 已写；**已真机验证**（5 场景，2026-09-15） |
 | 在 `web` profile 中挂载 | ✅ 已加进 `dsh.profile.bundles`（重启后生效） |
 
 ## 路由表（判断顺序 1→8，先匹配先返回）
@@ -126,6 +126,32 @@
 - 挂载：`~/.dsh/profiles/web/package.json` 的 `dsh.profile.bundles` 已含 `my-chatgpt-router`
   （装载链只认 bundles：`boot/app-boot/src/profile.ts:776`、`apps/cli/src/profile-boot.ts:235`）。
 
+### 依赖的 provider 插件
+
+`chatgpt-web` provider 由 [`dsh-llm-chatgpt-web`](https://github.com/twilightt1/dsh-llm-chatgpt-web) 提供。
+本插件只负责**路由**，不实现 provider 连接——没有该 provider 时，`chatgpt-web` 目标会以
+`NO_ADAPTER` 失败（插件不 fallback）。
+
+### 一键安装（推荐）
+
+本插件依赖 [`dsh-llm-chatgpt-web`](https://github.com/twilightt1/dsh-llm-chatgpt-web) 提供 `chatgpt-web` provider。
+一次性安装两个插件：
+
+```powershell
+cd <你的 DSH 源码目录>
+pnpm dsh plugin --profile web add github:twilightt1/dsh-llm-chatgpt-web
+pnpm dsh plugin --profile web add https://github.com/ken201207733/Ken-chatgpt-router
+```
+
+安装后重启 DSH：
+
+```powershell
+pnpm dsh web
+```
+
+本插件只负责路由，不提供 ChatGPT Web 连接能力。
+`chatgpt-web` provider 由 `dsh-llm-chatgpt-web` 提供，使用前请先安装它。
+
 ## 启动期自检（只 warn，不 fallback）
 
 `apply()` 对两个 provider 各调一次 `listModels`，核对四个路由目标 id：
@@ -166,11 +192,19 @@ my-chatgpt-router/
   README.md
 ```
 
+## 真机验证（2026-09-15）
+
+`index.ts` 的接线、投影注册、root 判定、effort 收口、`model/selection` 放行已在运行时验证。
+5 个场景全部通过：
+
+1. **手动切非默认模型** → 插件放行，不覆盖用户显式选择
+2. **巨会话（累计 >100k）** → 落到 `deepseek-official`，不撞 ChatGPT Web 的 20 万字符上限
+3. **切回默认模型** → 恢复自动路由
+4. **resume 后投影记得选择** → 自注册投影跨会话一致
+5. **手动切 chatgpt-web** → `reasoningEffort` 被清除，不报 `UNSUPPORTED_REASONING_EFFORT`
+
 ## 未做的事（诚实边界）
 
-- **未真机验证**：`index.ts` 的接线、投影注册、root 判定、effort 收口、`model/selection` 放行
-  都**没在运行时跑过**——需要重启 DSH 后用 `request/header` 核对最终 provider/model/effort，
-  并验证「手动切模型 / 巨大会话 / 切回默认 / resume / provider-model 错配」五个场景。
 - **未写 `index.ts` 的集成测试**：它的分支依赖 harness 运行时；已把可纯化的部分（口径折算、
   选择折叠）抽到 `capture.ts` / `selection.ts` 并测到。投影的 resume/fork/compaction 正确性
   **委托宿主投影机制保证**（`cellFor` 会折完整内存日志），未单独集成测试。
